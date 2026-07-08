@@ -9,6 +9,12 @@ from .views import (
     OrderViewSet,
     PortfolioHoldingViewSet,
     AuditLogViewSet,
+    account_summary_report,
+    transaction_summary_report,
+    deposit_withdrawal_summary_report,
+    portfolio_summary_report,
+    pending_orders_report,
+    failed_transactions_report,
 )
 
 router = DefaultRouter()
@@ -22,4 +28,11 @@ router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
 
 urlpatterns = [
     path('', include(router.urls)),
+
+    path('reports/account-summary/', account_summary_report),
+    path('reports/transaction-summary/', transaction_summary_report),
+    path('reports/deposit-withdrawal-summary/', deposit_withdrawal_summary_report),
+    path('reports/portfolio-summary/', portfolio_summary_report),
+    path('reports/pending-orders/', pending_orders_report),
+    path('reports/failed-transactions/', failed_transactions_report),
 ]
