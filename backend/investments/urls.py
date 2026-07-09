@@ -15,6 +15,12 @@ from .views import (
     portfolio_summary_report,
     pending_orders_report,
     failed_transactions_report,
+    duplicate_transactions_check,
+    negative_balances_check,
+    transaction_status_check,
+    order_status_check,
+    accounts_without_transactions_check,
+    investors_without_accounts_check,
 )
 
 router = DefaultRouter()
@@ -35,4 +41,11 @@ urlpatterns = [
     path('reports/portfolio-summary/', portfolio_summary_report),
     path('reports/pending-orders/', pending_orders_report),
     path('reports/failed-transactions/', failed_transactions_report),
+    
+    path('validation/duplicate-transactions/', duplicate_transactions_check),
+    path('validation/negative-balances/', negative_balances_check),
+    path('validation/transaction-status/', transaction_status_check),
+    path('validation/order-status/', order_status_check),
+    path('validation/accounts-without-transactions/', accounts_without_transactions_check),
+    path('validation/investors-without-accounts/', investors_without_accounts_check),
 ]

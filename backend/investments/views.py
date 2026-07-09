@@ -187,3 +187,117 @@ def failed_transactions_report(request):
         data = dict_fetch_all(cursor)
 
     return Response(data)
+
+# Data health check endpoints
+
+@api_view(['GET'])
+def duplicate_transactions_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                reference_number,
+                COUNT(*) AS duplicate_count
+            FROM transactions
+            GROUP BY reference_number
+            HAVING COUNT(*) > 1;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def negative_balances_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                id,
+                account_number,
+                balance,
+                status
+            FROM accounts
+            WHERE balance < 0;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def transaction_status_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                reference_number,
+                account_id,
+                transaction_type,
+                amount,
+                status,
+                transaction_date
+            FROM transactions
+            WHERE status IN ('PENDING', 'FAILED')
+            ORDER BY transaction_date DESC;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def order_status_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                id,
+                account_id,
+                stock_id,
+                order_type,
+                quantity,
+                price,
+                status,
+                order_date
+            FROM orders
+            WHERE status IN ('PENDING', 'FAILED', 'CANCELLED')
+            ORDER BY order_date DESC;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def accounts_without_transactions_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                a.id,
+                a.account_number,
+                i.full_name AS investor_name,
+                a.balance,
+                a.status
+            FROM accounts a
+            JOIN investors i ON a.investor_id = i.id
+            LEFT JOIN transactions t ON a.id = t.account_id
+            WHERE t.id IS NULL;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def investors_without_accounts_check(request):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                i.id,
+                i.full_name,
+                i.email,
+                i.created_at
+            FROM investors i
+            LEFT JOIN accounts a ON i.id = a.investor_id
+            WHERE a.id IS NULL;
+        """)
+        data = dict_fetch_all(cursor)
+
+    return Response(data)
