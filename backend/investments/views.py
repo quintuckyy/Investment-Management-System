@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status
-from .services import TransactionService
+from .services import TransactionService, OrderService
 from decimal import Decimal
 from .models import (
     Investor,
@@ -345,6 +345,71 @@ class CreateTransactionAPIView(APIView):
         except Account.DoesNotExist:
             return Response(
                 {"error": "Account not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        except Exception as error:
+            return Response(
+                {"error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class CreateOrderAPIView(APIView):
+    def post(self, request):
+        account_id = request.data.get('account_id')
+        stock_id = request.data.get('stock_id')
+        order_type = request.data.get('order_type')
+        quantity = request.data.get('quantity')
+        price = request.data.get('price')
+        order_status = request.data.get('status', 'COMPLETED')
+
+        if not account_id or not stock_id or not order_type or not quantity or not price:
+            return Response(
+                {
+                    "error": "account_id, stock_id, order_type, quantity, and price are required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            account = Account.objects.get(id=account_id)
+            stock = Stock.objects.get(id=stock_id)
+
+            quantity = int(quantity)
+            price = Decimal(str(price))
+
+            order_record = OrderService.create_order(
+                account=account,
+                stock=stock,
+                order_type=order_type,
+                quantity=quantity,
+                price=price,
+                status=order_status
+            )
+
+            return Response(
+                {
+                    "message": "Order created successfully.",
+                    "order_id": order_record.id,
+                    "account_number": account.account_number,
+                    "stock_symbol": stock.symbol,
+                    "order_type": order_record.order_type,
+                    "quantity": order_record.quantity,
+                    "price": order_record.price,
+                    "new_balance": account.balance,
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Account.DoesNotExist:
+            return Response(
+                {"error": "Account not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        except Stock.DoesNotExist:
+            return Response(
+                {"error": "Stock not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
 

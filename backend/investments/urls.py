@@ -22,6 +22,7 @@ from .views import (
     accounts_without_transactions_check,
     investors_without_accounts_check,
     CreateTransactionAPIView,
+    CreateOrderAPIView,
 )
 
 router = DefaultRouter()
@@ -35,6 +36,7 @@ router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
 
 urlpatterns = [
     path('transactions/create/', CreateTransactionAPIView.as_view()),
+    path('orders/create/', CreateOrderAPIView.as_view()),
 
     path('reports/account-summary/', account_summary_report),
     path('reports/transaction-summary/', transaction_summary_report),
@@ -49,6 +51,7 @@ urlpatterns = [
     path('validation/order-status/', order_status_check),
     path('validation/accounts-without-transactions/', accounts_without_transactions_check),
     path('validation/investors-without-accounts/', investors_without_accounts_check),
+   
     
     path('', include(router.urls)),
 ]
