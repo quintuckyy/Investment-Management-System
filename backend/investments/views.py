@@ -1,3 +1,6 @@
+import csv
+from decimal import Decimal, InvalidOperation
+
 from django.db import connection
 from django.db import models
 from rest_framework.decorators import api_view
@@ -6,7 +9,8 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status
 from .services import TransactionService, OrderService
-from decimal import Decimal
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from .models import (
     Investor,
     Account,
@@ -418,3 +422,114 @@ class CreateOrderAPIView(APIView):
                 {"error": str(error)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class ImportTransactionsCSVAPIView(APIView):
+    name ="Import Transactions CSV"
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        csv_file = request.FILES.get('file')
+
+        if not csv_file:
+            return Response(
+                {"error": "CSV file is required. Upload using field name 'file'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not csv_file.name.endswith('.csv'):
+            return Response(
+                {"error": "Only CSV files are allowed."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        decoded_file = csv_file.read().decode('utf-8').splitlines()
+        reader = csv.DictReader(decoded_file)
+
+        required_columns = {
+            'account_id',
+            'transaction_type',
+            'amount',
+            'reference_number',
+            'status'
+        }
+
+        if not required_columns.issubset(reader.fieldnames):
+            return Response(
+                {
+                    "error": "Invalid CSV format.",
+                    "required_columns": list(required_columns)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        total_rows = 0
+        imported_rows = 0
+        failed_rows = []
+
+        for row_number, row in enumerate(reader, start=2):
+            total_rows += 1
+
+            account_id = row.get('account_id')
+            transaction_type = row.get('transaction_type')
+            amount_value = row.get('amount')
+            reference_number = row.get('reference_number')
+            transaction_status = row.get('status', 'COMPLETED')
+
+            try:
+                if not account_id or not transaction_type or not amount_value or not reference_number:
+                    raise ValueError("Missing required field.")
+
+                if transaction_type not in ['DEPOSIT', 'WITHDRAWAL']:
+                    raise ValueError("Invalid transaction type.")
+
+                if transaction_status not in ['COMPLETED', 'PENDING', 'FAILED']:
+                    raise ValueError("Invalid transaction status.")
+
+                amount = Decimal(str(amount_value))
+
+                if amount <= 0:
+                    raise ValueError("Amount must be greater than 0.")
+
+                account = Account.objects.get(id=account_id)
+
+                TransactionService.create_transaction(
+                    account=account,
+                    transaction_type=transaction_type,
+                    amount=amount,
+                    reference_number=reference_number,
+                    status=transaction_status
+                )
+
+                imported_rows += 1
+
+            except Account.DoesNotExist:
+                failed_rows.append({
+                    "row": row_number,
+                    "reference_number": reference_number,
+                    "error": "Account not found."
+                })
+
+            except InvalidOperation:
+                failed_rows.append({
+                    "row": row_number,
+                    "reference_number": reference_number,
+                    "error": "Invalid amount format."
+                })
+
+            except Exception as error:
+                failed_rows.append({
+                    "row": row_number,
+                    "reference_number": reference_number,
+                    "error": str(error)
+                })
+
+        return Response(
+            {
+                "message": "CSV import completed.",
+                "total_rows": total_rows,
+                "imported_rows": imported_rows,
+                "failed_rows": len(failed_rows),
+                "errors": failed_rows
+            },
+            status=status.HTTP_200_OK
+        )
