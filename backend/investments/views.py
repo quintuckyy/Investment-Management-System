@@ -3,6 +3,10 @@ from django.db import models
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework import status
+from .services import TransactionService
+from decimal import Decimal
 from .models import (
     Investor,
     Account,
@@ -21,7 +25,6 @@ from .serializers import (
     PortfolioHoldingSerializer,
     AuditLogSerializer,
 )
-
 
 class InvestorViewSet(viewsets.ModelViewSet):
     queryset = Investor.objects.all()
@@ -301,3 +304,52 @@ def investors_without_accounts_check(request):
         data = dict_fetch_all(cursor)
 
     return Response(data)
+
+class CreateTransactionAPIView(APIView):
+    def post(self, request):
+        account_id = request.data.get('account_id')
+        transaction_type = request.data.get('transaction_type')
+        amount = request.data.get('amount')
+        reference_number = request.data.get('reference_number')
+        transaction_status = request.data.get('status', 'COMPLETED')
+
+        if not account_id or not transaction_type or not amount or not reference_number:
+            return Response(
+                {"error": "account_id, transaction_type, amount, and reference_number are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            account = Account.objects.get(id=account_id)
+            amount = Decimal(str(amount))  # Ensure amount is a Decimal
+
+            transaction_record = TransactionService.create_transaction(
+                account=account,
+                transaction_type=transaction_type,
+                amount=amount,
+                reference_number=reference_number,
+                status=transaction_status
+            )
+
+            return Response(
+                {
+                    "message": "Transaction created successfully.",
+                    "transaction_id": transaction_record.id,
+                    "reference_number": transaction_record.reference_number,
+                    "account_number": account.account_number,
+                    "new_balance": account.balance,
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Account.DoesNotExist:
+            return Response(
+                {"error": "Account not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        except Exception as error:
+            return Response(
+                {"error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
