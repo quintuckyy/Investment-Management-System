@@ -1,0 +1,32 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AppLayout from "./layouts/AppLayout";
+
+import Dashboard from "./pages/Dashboard";
+import Investors from "./pages/Investors";
+import Accounts from "./pages/Accounts";
+import Transactions from "./pages/Transactions";
+import Orders from "./pages/Orders";
+import Portfolio from "./pages/Portfolio";
+import Reports from "./pages/Reports";
+import ImportTransactions from "./pages/ImportTransactions";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/investors" element={<Investors />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/import" element={<ImportTransactions />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
