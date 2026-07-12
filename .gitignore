@@ -23,7 +23,6 @@ Thumbs.db
 .idea/
 
 #env file
-
 .env
 venv/
 __pycache__/
