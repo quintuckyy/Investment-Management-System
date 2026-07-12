@@ -66,3 +66,12 @@ export interface PortfolioHolding {
   gain_loss: string;
   updated_at: string;
 }
+
+export interface AuditLog {
+  id: number;
+  table_name: string;
+  action: string;
+  record_id?: number;
+  description?: string;
+  created_at: string; 
+}

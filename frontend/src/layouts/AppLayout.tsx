@@ -34,6 +34,9 @@ function AppLayout() {
           <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/validation">
             Data Validation
           </Link>
+          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/audit-logs">
+            Audit Logs
+          </Link>
           <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/import">
             CSV Import
           </Link>
