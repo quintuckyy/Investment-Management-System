@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
-
+import DataValidation from "./pages/DataValidation";
 import Dashboard from "./pages/Dashboard";
 import Investors from "./pages/Investors";
 import Accounts from "./pages/Accounts";
@@ -22,6 +22,7 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/validation" element={<DataValidation />} />
           <Route path="/import" element={<ImportTransactions />} />
         </Route>
       </Routes>
