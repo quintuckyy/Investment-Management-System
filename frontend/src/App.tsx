@@ -4,6 +4,7 @@ import AppLayout from "./layouts/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Investors from "./pages/Investors";
 import Accounts from "./pages/Accounts";
+import Stocks from "./pages/Stocks";
 import Transactions from "./pages/Transactions";
 import Orders from "./pages/Orders";
 import Portfolio from "./pages/Portfolio";
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/investors" element={<Investors />} />
           <Route path="/accounts" element={<Accounts />} />
+          <Route path="/stocks" element={<Stocks/>} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/portfolio" element={<Portfolio />} />

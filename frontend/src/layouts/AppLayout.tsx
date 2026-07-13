@@ -19,6 +19,9 @@ function AppLayout() {
           <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/accounts">
             Accounts
           </Link>
+          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/stocks">
+            Stocks
+          </Link>
           <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/transactions">
             Transactions
           </Link>
