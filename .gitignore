@@ -2,7 +2,12 @@
 __pycache__/
 *.pyc
 venv/
+backend/venv/
+
+# Environment files
 .env
+.env.local
+backend/.env
 
 # Django
 db.sqlite3
@@ -12,7 +17,8 @@ staticfiles/
 # Node
 node_modules/
 dist/
-.env.local
+frontend/node_modules/
+frontend/dist/
 
 # OS
 .DS_Store
@@ -21,9 +27,3 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-
-#env file
-.env
-venv/
-__pycache__/
-*.pyc
