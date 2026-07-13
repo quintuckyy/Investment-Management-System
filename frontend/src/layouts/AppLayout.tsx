@@ -1,4 +1,11 @@
-import { Link, Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `block rounded px-3 py-2 text-sm font-medium ${
+    isActive
+      ? "bg-slate-700 text-white"
+      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+  }`;
 
 function AppLayout() {
   return (
@@ -10,44 +17,56 @@ function AppLayout() {
         </div>
 
         <nav className="space-y-1 px-4 py-4">
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/">
+          <NavLink className={navLinkClass} to="/">
             Dashboard
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/investors">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/investors">
             Investors
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/accounts">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/accounts">
             Accounts
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/stocks">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/stocks">
             Stocks
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/transactions">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/transactions">
             Transactions
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/orders">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/orders">
             Orders
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/portfolio">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/portfolio">
             Portfolio
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/reports">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/reports">
             Reports
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/validation">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/validation">
             Data Validation
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/audit-logs">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/audit-logs">
             Audit Logs
-          </Link>
-          <Link className="block rounded px-3 py-2 hover:bg-slate-800" to="/import">
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/import">
             CSV Import
-          </Link>
+          </NavLink>
         </nav>
       </aside>
 
       <main className="ml-64 min-h-screen p-8">
-        <Outlet />
+        <div className="mx-auto max-w-7xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
