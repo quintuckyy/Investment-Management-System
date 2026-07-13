@@ -4,18 +4,34 @@ from rest_framework.exceptions import ValidationError
 from .models import Account, Transaction, AuditLog, Order, Stock, PortfolioHolding
 
 
+from django.db import transaction as db_transaction
+from rest_framework.exceptions import ValidationError
+
+from .models import Account, Transaction, AuditLog, Order, Stock, PortfolioHolding
+
+
 class TransactionService:
     @staticmethod
     @db_transaction.atomic
     def create_transaction(account, transaction_type, amount, reference_number, status='COMPLETED'):
+        account = Account.objects.select_for_update().get(id=account.id)
+
         if amount <= 0:
-            raise ValidationError("Amount must be greater than 0.")
+            raise ValidationError(f"Amount must be greater than ₱0 (got ₱{amount:,.2f}).")
 
         if Transaction.objects.filter(reference_number=reference_number).exists():
-            raise ValidationError("Reference number already exists.")
+            raise ValidationError(f"A transaction with reference number '{reference_number}' already exists.")
+
+        if transaction_type not in ['DEPOSIT', 'WITHDRAWAL']:
+            raise ValidationError(f"'{transaction_type}' is not a valid transaction type; use DEPOSIT or WITHDRAWAL.")
+
+        if status not in ['COMPLETED', 'PENDING', 'FAILED']:
+            raise ValidationError(f"'{status}' is not a valid status; use COMPLETED, PENDING, or FAILED.")
 
         if transaction_type == 'WITHDRAWAL' and amount > account.balance:
-            raise ValidationError("Withdrawal amount cannot exceed account balance.")
+            raise ValidationError(
+                f"Withdrawal of ₱{amount:,.2f} exceeds the available balance of ₱{account.balance:,.2f}."
+            )
 
         transaction_record = Transaction.objects.create(
             account=account,
@@ -27,11 +43,12 @@ class TransactionService:
 
         if status == 'COMPLETED':
             if transaction_type == 'DEPOSIT':
-                account.balance += amount
-            elif transaction_type == 'WITHDRAWAL':
-                account.balance -= amount
+                account.balance = account.balance + amount
 
-            account.save()
+            if transaction_type == 'WITHDRAWAL':
+                account.balance = account.balance - amount
+
+            account.save(update_fields=['balance'])
 
         AuditLog.objects.create(
             table_name='transactions',

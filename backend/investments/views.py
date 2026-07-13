@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from .services import TransactionService, OrderService
 from rest_framework.parsers import MultiPartParser, FormParser
 
@@ -45,7 +46,9 @@ class StockViewSet(viewsets.ModelViewSet):
     serializer_class = StockSerializer
 
 
-class TransactionViewSet(viewsets.ModelViewSet):
+class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
+    # Writes must go through CreateTransactionAPIView / TransactionService so that
+    # balance updates and audit logging stay consistent with the transaction record.
     queryset = Transaction.objects.select_related('account', 'account__investor').all()
     serializer_class = TransactionSerializer
 
@@ -63,6 +66,26 @@ class PortfolioHoldingViewSet(viewsets.ModelViewSet):
 class AuditLogViewSet(viewsets.ModelViewSet):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
+
+def extract_error_message(error):
+    """Pull a single human-readable string out of a DRF ValidationError.
+
+    str(ValidationError(...)) renders as "[ErrorDetail(string='...', code='...')]",
+    which is not something to show a user - this unwraps it to the plain message.
+    """
+    detail = error.detail
+
+    if isinstance(detail, list):
+        return str(detail[0]) if detail else "Invalid input."
+
+    if isinstance(detail, dict):
+        first_value = next(iter(detail.values()), None)
+        if isinstance(first_value, list) and first_value:
+            return str(first_value[0])
+        return str(first_value) if first_value is not None else "Invalid input."
+
+    return str(detail)
+
 
 def dict_fetch_all(cursor):
     columns = [col[0] for col in cursor.description]
@@ -319,13 +342,20 @@ class CreateTransactionAPIView(APIView):
 
         if not account_id or not transaction_type or not amount or not reference_number:
             return Response(
-                {"error": "account_id, transaction_type, amount, and reference_number are required."},
+                {"error": "Please select an account and provide a transaction type, amount, and reference number."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             account = Account.objects.get(id=account_id)
-            amount = Decimal(str(amount))  # Ensure amount is a Decimal
+
+            try:
+                amount = Decimal(str(amount))
+            except InvalidOperation:
+                return Response(
+                    {"error": f"'{amount}' is not a valid amount."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             transaction_record = TransactionService.create_transaction(
                 account=account,
@@ -341,15 +371,21 @@ class CreateTransactionAPIView(APIView):
                     "transaction_id": transaction_record.id,
                     "reference_number": transaction_record.reference_number,
                     "account_number": account.account_number,
-                    "new_balance": account.balance,
+                    "new_balance": transaction_record.account.balance,
                 },
                 status=status.HTTP_201_CREATED
             )
 
         except Account.DoesNotExist:
             return Response(
-                {"error": "Account not found."},
+                {"error": f"No account found with ID {account_id}."},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        except ValidationError as error:
+            return Response(
+                {"error": extract_error_message(error)},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         except Exception as error:
@@ -477,18 +513,18 @@ class ImportTransactionsCSVAPIView(APIView):
 
             try:
                 if not account_id or not transaction_type or not amount_value or not reference_number:
-                    raise ValueError("Missing required field.")
+                    raise ValueError("Row is missing account_id, transaction_type, amount, or reference_number.")
 
                 if transaction_type not in ['DEPOSIT', 'WITHDRAWAL']:
-                    raise ValueError("Invalid transaction type.")
+                    raise ValueError(f"'{transaction_type}' is not a valid transaction type; use DEPOSIT or WITHDRAWAL.")
 
                 if transaction_status not in ['COMPLETED', 'PENDING', 'FAILED']:
-                    raise ValueError("Invalid transaction status.")
+                    raise ValueError(f"'{transaction_status}' is not a valid status; use COMPLETED, PENDING, or FAILED.")
 
                 amount = Decimal(str(amount_value))
 
                 if amount <= 0:
-                    raise ValueError("Amount must be greater than 0.")
+                    raise ValueError(f"Amount '{amount_value}' must be greater than 0.")
 
                 account = Account.objects.get(id=account_id)
 
@@ -506,14 +542,21 @@ class ImportTransactionsCSVAPIView(APIView):
                 failed_rows.append({
                     "row": row_number,
                     "reference_number": reference_number,
-                    "error": "Account not found."
+                    "error": f"No account found with ID {account_id}."
                 })
 
             except InvalidOperation:
                 failed_rows.append({
                     "row": row_number,
                     "reference_number": reference_number,
-                    "error": "Invalid amount format."
+                    "error": f"'{amount_value}' is not a valid amount."
+                })
+
+            except ValidationError as error:
+                failed_rows.append({
+                    "row": row_number,
+                    "reference_number": reference_number,
+                    "error": extract_error_message(error)
                 })
 
             except Exception as error:

@@ -67,12 +67,29 @@ function Orders() {
 
       await loadData();
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        "Failed to create order.";
+        setMessage(cleanErrorMessage(error));
+        function cleanErrorMessage(error: any) {
+            const rawMessage =
+                error.response?.data?.error ||
+                error.response?.data?.detail ||
+                "Failed to create order.";
 
-      setMessage(errorMessage);
+            if (Array.isArray(rawMessage)) {
+                return rawMessage.join(" ");
+            }
+
+            if (typeof rawMessage === "string") {
+                const match = rawMessage.match(/string='([^']+)'/);
+
+                if (match && match[1]) {
+                return match[1];
+                }
+
+                return rawMessage;
+            }
+
+            return "Failed to create order.";
+            }
     }
   }
 
@@ -98,9 +115,15 @@ function Orders() {
         </h3>
 
         {message && (
-          <div className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-700">
-            {message}
-          </div>
+            <div
+                className={`mt-4 rounded p-3 text-sm ${
+                message.toLowerCase().includes("successfully")
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-700"
+                }`}
+            >
+                {message}
+            </div>
         )}
 
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-6">

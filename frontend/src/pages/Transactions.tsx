@@ -7,6 +7,7 @@ function Transactions() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "">("");
 
   const [formData, setFormData] = useState({
     account_id: "",
@@ -39,9 +40,10 @@ function Transactions() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setMessage("");
+    setMessageType("");
 
     try {
-      await apiClient.post("/transactions/create/", {
+      const response = await apiClient.post("/transactions/create/", {
         account_id: Number(formData.account_id),
         transaction_type: formData.transaction_type,
         amount: formData.amount,
@@ -49,7 +51,15 @@ function Transactions() {
         status: formData.status,
       });
 
-      setMessage("Transaction created successfully.");
+      const newBalance = Number(response.data.new_balance).toLocaleString(
+        undefined,
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      );
+
+      setMessage(
+        `${formData.transaction_type === "WITHDRAWAL" ? "Withdrawal" : "Deposit"} of ${formData.reference_number} completed. New balance: ₱${newBalance}.`
+      );
+      setMessageType("success");
 
       setFormData({
         account_id: "",
@@ -64,9 +74,10 @@ function Transactions() {
       const errorMessage =
         error.response?.data?.error ||
         error.response?.data?.detail ||
-        "Failed to create transaction.";
+        "Failed to create transaction. Please check your connection and try again.";
 
       setMessage(errorMessage);
+      setMessageType("error");
     }
   }
 
@@ -92,7 +103,13 @@ function Transactions() {
         </h3>
 
         {message && (
-          <div className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-700">
+          <div
+            className={`mt-4 rounded border p-3 text-sm ${
+              messageType === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-green-200 bg-green-50 text-green-700"
+            }`}
+          >
             {message}
           </div>
         )}

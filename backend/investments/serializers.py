@@ -39,7 +39,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def validate_amount(self, value):
         if value <= 0:
-            raise serializers.ValidationError("Transaction amount must be greater than 0.")
+            raise serializers.ValidationError(f"Amount must be greater than ₱0 (got ₱{value:,.2f}).")
         return value
 
     def validate(self, data):
@@ -49,7 +49,9 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         if transaction_type == 'WITHDRAWAL' and account and amount:
             if amount > account.balance:
-                raise serializers.ValidationError("Withdrawal amount cannot exceed account balance.")
+                raise serializers.ValidationError(
+                    f"Withdrawal of ₱{amount:,.2f} exceeds the available balance of ₱{account.balance:,.2f}."
+                )
 
         return data
 
