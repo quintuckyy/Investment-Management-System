@@ -91,9 +91,9 @@ This project demonstrates database development skills using PostgreSQL, Django R
 
 ### Database
 
-## Create a PostgreSQL database named:
+## Create a PostgreSQL database named investment_db:
 
-investment_db
+- CREATE DATABASE investment_db;
 
 ## Run the SQL scripts inside the database/ folder in this order:
 
@@ -129,11 +129,11 @@ DB_PORT=1234
 - npm install
 - npm run dev
 
-## Frontend URL:
+## Your Frontend URL:
 
 http://localhost:5173/
 
-## Backend URL:
+## Your Backend URL:
 
 http://127.0.0.1:8000/api/
 
