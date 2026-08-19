@@ -1,4 +1,4 @@
-# Investment Database System
+# Investment Management System
 
 A full-stack database-focused application for managing investors, accounts, stocks, transactions, buy/sell orders, portfolio holdings, reports, validation checks, audit logs, and CSV transaction imports.
 
