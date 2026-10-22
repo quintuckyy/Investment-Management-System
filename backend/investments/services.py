@@ -1,19 +1,19 @@
 from django.db import transaction as db_transaction
 from rest_framework.exceptions import ValidationError
 
-from .models import Account, Transaction, AuditLog, Order, Stock, PortfolioHolding
+from .models import Account, AuditLog, Order, PortfolioHolding, Transaction
 
-
-from django.db import transaction as db_transaction
-from rest_framework.exceptions import ValidationError
-
-from .models import Account, Transaction, AuditLog, Order, Stock, PortfolioHolding
+TRANSACTION_TYPES = ('DEPOSIT', 'WITHDRAWAL')
+TRANSACTION_STATUSES = ('COMPLETED', 'PENDING', 'FAILED')
+ORDER_TYPES = ('BUY', 'SELL')
+ORDER_STATUSES = ('COMPLETED', 'PENDING', 'CANCELLED', 'FAILED')
 
 
 class TransactionService:
     @staticmethod
     @db_transaction.atomic
     def create_transaction(account, transaction_type, amount, reference_number, status='COMPLETED'):
+        # Lock the account row so concurrent requests cannot both pass the balance check.
         account = Account.objects.select_for_update().get(id=account.id)
 
         if amount <= 0:
@@ -22,10 +22,10 @@ class TransactionService:
         if Transaction.objects.filter(reference_number=reference_number).exists():
             raise ValidationError(f"A transaction with reference number '{reference_number}' already exists.")
 
-        if transaction_type not in ['DEPOSIT', 'WITHDRAWAL']:
+        if transaction_type not in TRANSACTION_TYPES:
             raise ValidationError(f"'{transaction_type}' is not a valid transaction type; use DEPOSIT or WITHDRAWAL.")
 
-        if status not in ['COMPLETED', 'PENDING', 'FAILED']:
+        if status not in TRANSACTION_STATUSES:
             raise ValidationError(f"'{status}' is not a valid status; use COMPLETED, PENDING, or FAILED.")
 
         if transaction_type == 'WITHDRAWAL' and amount > account.balance:
@@ -41,6 +41,7 @@ class TransactionService:
             status=status
         )
 
+        # Only completed transactions move money.
         if status == 'COMPLETED':
             if transaction_type == 'DEPOSIT':
                 account.balance = account.balance + amount
@@ -59,10 +60,20 @@ class TransactionService:
 
         return transaction_record
 
+
 class OrderService:
     @staticmethod
     @db_transaction.atomic
     def create_order(account, stock, order_type, quantity, price, status='COMPLETED'):
+        # Lock the account row so concurrent orders cannot overspend the balance.
+        account = Account.objects.select_for_update().get(id=account.id)
+
+        if order_type not in ORDER_TYPES:
+            raise ValidationError(f"'{order_type}' is not a valid order type; use BUY or SELL.")
+
+        if status not in ORDER_STATUSES:
+            raise ValidationError(f"'{status}' is not a valid status; use COMPLETED, PENDING, CANCELLED, or FAILED.")
+
         if quantity <= 0:
             raise ValidationError("Quantity must be greater than 0.")
 
@@ -76,7 +87,7 @@ class OrderService:
                 raise ValidationError("Insufficient account balance for this buy order.")
 
         if order_type == 'SELL':
-            holding = PortfolioHolding.objects.filter(
+            holding = PortfolioHolding.objects.select_for_update().filter(
                 account=account,
                 stock=stock
             ).first()
@@ -96,12 +107,13 @@ class OrderService:
             status=status
         )
 
+        # Only completed orders move money and shares.
         if status == 'COMPLETED':
             if order_type == 'BUY':
                 account.balance -= order_value
-                account.save()
+                account.save(update_fields=['balance'])
 
-                holding, created = PortfolioHolding.objects.get_or_create(
+                holding, created = PortfolioHolding.objects.select_for_update().get_or_create(
                     account=account,
                     stock=stock,
                     defaults={
@@ -111,6 +123,7 @@ class OrderService:
                 )
 
                 if not created:
+                    # Weighted average cost of the old and new shares.
                     total_old_value = holding.quantity * holding.average_price
                     total_new_value = quantity * price
                     new_quantity = holding.quantity + quantity
@@ -120,13 +133,8 @@ class OrderService:
                     holding.save()
 
             elif order_type == 'SELL':
-                holding = PortfolioHolding.objects.get(
-                    account=account,
-                    stock=stock
-                )
-
                 account.balance += order_value
-                account.save()
+                account.save(update_fields=['balance'])
 
                 holding.quantity -= quantity
 
