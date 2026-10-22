@@ -246,7 +246,7 @@ function ImportTransactions() {
 
   if (!isStaff) {
     return (
-      <div className="max-w-5xl">
+      <div>
         <h2 className="text-3xl font-bold text-gray-900">CSV Import</h2>
         <p className="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
           You have read-only access. Importing transactions requires a staff
@@ -257,7 +257,7 @@ function ImportTransactions() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">CSV Import</h2>
