@@ -6,18 +6,18 @@ function AuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function loadAuditLogs() {
-    try {
-      const response = await apiClient.get("/audit-logs/");
-      setLogs(response.data);
-    } catch (error) {
-      console.error("Failed to load audit logs:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadAuditLogs() {
+      try {
+        const response = await apiClient.get("/audit-logs/");
+        setLogs(response.data);
+      } catch (error) {
+        console.error("Failed to load audit logs:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadAuditLogs();
   }, []);
 

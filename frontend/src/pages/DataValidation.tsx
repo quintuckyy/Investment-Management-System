@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../api/client";
 
-type ValidationResult = Record<string, any>;
+type ValidationResult = Record<string, string | number | null>;
 
 function DataValidation() {
   const [duplicateTransactions, setDuplicateTransactions] = useState<ValidationResult[]>([]);
@@ -10,40 +10,44 @@ function DataValidation() {
   const [orderStatus, setOrderStatus] = useState<ValidationResult[]>([]);
   const [accountsWithoutTransactions, setAccountsWithoutTransactions] = useState<ValidationResult[]>([]);
   const [investorsWithoutAccounts, setInvestorsWithoutAccounts] = useState<ValidationResult[]>([]);
+  const [balanceMismatches, setBalanceMismatches] = useState<ValidationResult[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function loadValidationData() {
-    try {
-      const [
-        duplicateTransactionsRes,
-        negativeBalancesRes,
-        transactionStatusRes,
-        orderStatusRes,
-        accountsWithoutTransactionsRes,
-        investorsWithoutAccountsRes,
-      ] = await Promise.all([
-        apiClient.get("/validation/duplicate-transactions/"),
-        apiClient.get("/validation/negative-balances/"),
-        apiClient.get("/validation/transaction-status/"),
-        apiClient.get("/validation/order-status/"),
-        apiClient.get("/validation/accounts-without-transactions/"),
-        apiClient.get("/validation/investors-without-accounts/"),
-      ]);
-
-      setDuplicateTransactions(duplicateTransactionsRes.data);
-      setNegativeBalances(negativeBalancesRes.data);
-      setTransactionStatus(transactionStatusRes.data);
-      setOrderStatus(orderStatusRes.data);
-      setAccountsWithoutTransactions(accountsWithoutTransactionsRes.data);
-      setInvestorsWithoutAccounts(investorsWithoutAccountsRes.data);
-    } catch (error) {
-      console.error("Failed to load validation data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadValidationData() {
+      try {
+        const [
+          duplicateTransactionsRes,
+          negativeBalancesRes,
+          transactionStatusRes,
+          orderStatusRes,
+          accountsWithoutTransactionsRes,
+          investorsWithoutAccountsRes,
+          balanceMismatchesRes,
+        ] = await Promise.all([
+          apiClient.get("/validation/duplicate-transactions/"),
+          apiClient.get("/validation/negative-balances/"),
+          apiClient.get("/validation/transaction-status/"),
+          apiClient.get("/validation/order-status/"),
+          apiClient.get("/validation/accounts-without-transactions/"),
+          apiClient.get("/validation/investors-without-accounts/"),
+          apiClient.get("/validation/balance-reconciliation/"),
+        ]);
+
+        setDuplicateTransactions(duplicateTransactionsRes.data);
+        setNegativeBalances(negativeBalancesRes.data);
+        setTransactionStatus(transactionStatusRes.data);
+        setOrderStatus(orderStatusRes.data);
+        setAccountsWithoutTransactions(accountsWithoutTransactionsRes.data);
+        setInvestorsWithoutAccounts(investorsWithoutAccountsRes.data);
+        setBalanceMismatches(balanceMismatchesRes.data);
+      } catch (error) {
+        console.error("Failed to load validation data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadValidationData();
   }, []);
 
@@ -123,6 +127,7 @@ function DataValidation() {
       <div className="mt-8 grid grid-cols-1 gap-6">
         {renderResultTable("Duplicate Transactions", duplicateTransactions)}
         {renderResultTable("Negative Account Balances", negativeBalances)}
+        {renderResultTable("Balances That Do Not Match the Ledger", balanceMismatches)}
         {renderResultTable("Pending / Failed Transactions", transactionStatus)}
         {renderResultTable("Pending / Failed / Cancelled Orders", orderStatus)}
         {renderResultTable("Accounts Without Transactions", accountsWithoutTransactions)}

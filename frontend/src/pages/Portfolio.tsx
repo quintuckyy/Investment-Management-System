@@ -6,18 +6,18 @@ function Portfolio() {
   const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function loadPortfolio() {
-    try {
-      const response = await apiClient.get("/portfolio-holdings/");
-      setHoldings(response.data);
-    } catch (error) {
-      console.error("Failed to load portfolio holdings:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadPortfolio() {
+      try {
+        const response = await apiClient.get("/portfolio-holdings/");
+        setHoldings(response.data);
+      } catch (error) {
+        console.error("Failed to load portfolio holdings:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadPortfolio();
   }, []);
 
