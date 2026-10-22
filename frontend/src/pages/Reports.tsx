@@ -39,26 +39,26 @@ function Reports() {
   const [failedTransactions, setFailedTransactions] = useState<TransactionStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function loadReports() {
-    try {
-      const [accountsRes, portfolioRes, failedTransactionsRes] =
-        await Promise.all([
-          apiClient.get("/reports/account-summary/"),
-          apiClient.get("/reports/portfolio-summary/"),
-          apiClient.get("/reports/failed-transactions/"),
-        ]);
-
-      setAccountSummary(accountsRes.data);
-      setPortfolioSummary(portfolioRes.data);
-      setFailedTransactions(failedTransactionsRes.data);
-    } catch (error) {
-      console.error("Failed to load reports:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadReports() {
+      try {
+        const [accountsRes, portfolioRes, failedTransactionsRes] =
+          await Promise.all([
+            apiClient.get("/reports/account-summary/"),
+            apiClient.get("/reports/portfolio-summary/"),
+            apiClient.get("/reports/failed-transactions/"),
+          ]);
+
+        setAccountSummary(accountsRes.data);
+        setPortfolioSummary(portfolioRes.data);
+        setFailedTransactions(failedTransactionsRes.data);
+      } catch (error) {
+        console.error("Failed to load reports:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadReports();
   }, []);
 

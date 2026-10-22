@@ -1,29 +1,33 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    InvestorViewSet,
     AccountViewSet,
-    StockViewSet,
-    TransactionViewSet,
+    AuditLogViewSet,
+    CreateOrderAPIView,
+    CreateTransactionAPIView,
+    ImportTransactionsCSVAPIView,
+    InvestorViewSet,
+    LoginView,
+    LogoutView,
+    MeView,
     OrderViewSet,
     PortfolioHoldingViewSet,
-    AuditLogViewSet,
+    StockViewSet,
+    TransactionViewSet,
     account_summary_report,
-    transaction_summary_report,
-    deposit_withdrawal_summary_report,
-    portfolio_summary_report,
-    pending_orders_report,
-    failed_transactions_report,
-    duplicate_transactions_check,
-    negative_balances_check,
-    transaction_status_check,
-    order_status_check,
     accounts_without_transactions_check,
+    balance_reconciliation_check,
+    deposit_withdrawal_summary_report,
+    duplicate_transactions_check,
+    failed_transactions_report,
     investors_without_accounts_check,
-    CreateTransactionAPIView,
-    CreateOrderAPIView,
-    ImportTransactionsCSVAPIView,
+    negative_balances_check,
+    order_status_check,
+    pending_orders_report,
+    portfolio_summary_report,
+    transaction_status_check,
+    transaction_summary_report,
 )
 
 router = DefaultRouter()
@@ -36,6 +40,10 @@ router.register(r'portfolio-holdings', PortfolioHoldingViewSet, basename='portfo
 router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
 
 urlpatterns = [
+    path('auth/login/', LoginView.as_view(), name='login'),
+    path('auth/logout/', LogoutView.as_view(), name='logout'),
+    path('auth/me/', MeView.as_view(), name='me'),
+
     path('transactions/create/', CreateTransactionAPIView.as_view()),
     path('orders/create/', CreateOrderAPIView.as_view()),
     path('etl/import-transactions/', ImportTransactionsCSVAPIView.as_view()),
@@ -53,6 +61,7 @@ urlpatterns = [
     path('validation/order-status/', order_status_check),
     path('validation/accounts-without-transactions/', accounts_without_transactions_check),
     path('validation/investors-without-accounts/', investors_without_accounts_check),
-    
+    path('validation/balance-reconciliation/', balance_reconciliation_check),
+
     path('', include(router.urls)),
 ]

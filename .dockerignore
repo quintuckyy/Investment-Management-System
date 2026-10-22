@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/dist
+backend/venv
+backend/.env
+frontend/.env
+.git
+.github
+.vscode
+.claude
+**/.ruff_cache

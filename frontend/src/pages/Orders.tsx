@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import apiClient from "../api/client";
+import { useAuth } from "../auth/AuthContext";
+import { parseApiError } from "../utils/errors";
 import type { Account, Order, Stock } from "../types/investment";
 
 function Orders() {
+  const { isStaff } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [message, setMessage] = useState("");
 
   const [formData, setFormData] = useState({
@@ -18,27 +22,27 @@ function Orders() {
     status: "COMPLETED",
   });
 
-  async function loadData() {
-    try {
-      const [ordersRes, accountsRes, stocksRes] = await Promise.all([
-        apiClient.get("/orders/"),
-        apiClient.get("/accounts/"),
-        apiClient.get("/stocks/"),
-      ]);
-
-      setOrders(ordersRes.data);
-      setAccounts(accountsRes.data);
-      setStocks(stocksRes.data);
-    } catch (error) {
-      console.error("Failed to load orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadData() {
+      try {
+        const [ordersRes, accountsRes, stocksRes] = await Promise.all([
+          apiClient.get("/orders/"),
+          apiClient.get("/accounts/"),
+          apiClient.get("/stocks/"),
+        ]);
+
+        setOrders(ordersRes.data);
+        setAccounts(accountsRes.data);
+        setStocks(stocksRes.data);
+      } catch (error) {
+        console.error("Failed to load orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadData();
-  }, []);
+  }, [reloadKey]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -65,31 +69,9 @@ function Orders() {
         status: "COMPLETED",
       });
 
-      await loadData();
-    } catch (error: any) {
-        setMessage(cleanErrorMessage(error));
-        function cleanErrorMessage(error: any) {
-            const rawMessage =
-                error.response?.data?.error ||
-                error.response?.data?.detail ||
-                "Failed to create order.";
-
-            if (Array.isArray(rawMessage)) {
-                return rawMessage.join(" ");
-            }
-
-            if (typeof rawMessage === "string") {
-                const match = rawMessage.match(/string='([^']+)'/);
-
-                if (match && match[1]) {
-                return match[1];
-                }
-
-                return rawMessage;
-            }
-
-            return "Failed to create order.";
-            }
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      setMessage(parseApiError(error, "Failed to create order.").message);
     }
   }
 
@@ -106,6 +88,7 @@ function Orders() {
         </p>
       </div>
 
+      {isStaff ? (
       <form
         onSubmit={handleSubmit}
         className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
@@ -227,6 +210,11 @@ function Orders() {
           </div>
         </div>
       </form>
+      ) : (
+        <p className="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          You have read-only access. Ask a staff user to create records.
+        </p>
+      )}
 
       <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">

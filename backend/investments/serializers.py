@@ -1,13 +1,16 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+
 from .models import (
-    Investor,
     Account,
-    Stock,
-    Transaction,
+    AuditLog,
+    Investor,
     Order,
     PortfolioHolding,
-    AuditLog,
+    Stock,
+    Transaction,
 )
+
 
 class InvestorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,6 +24,9 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = '__all__'
+        # Balances change only through transactions and orders, so the ledger and
+        # the audit log always explain where the money came from.
+        read_only_fields = ['balance']
 
 
 class StockSerializer(serializers.ModelSerializer):
@@ -66,6 +72,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = '__all__'
 
+    @extend_schema_field(serializers.DecimalField(max_digits=17, decimal_places=2))
     def get_order_value(self, obj):
         return obj.quantity * obj.price
 
@@ -97,9 +104,11 @@ class PortfolioHoldingSerializer(serializers.ModelSerializer):
         model = PortfolioHolding
         fields = '__all__'
 
+    @extend_schema_field(serializers.DecimalField(max_digits=17, decimal_places=2))
     def get_current_value(self, obj):
         return obj.quantity * obj.stock.current_price
 
+    @extend_schema_field(serializers.DecimalField(max_digits=17, decimal_places=2))
     def get_gain_loss(self, obj):
         invested_value = obj.quantity * obj.average_price
         current_value = obj.quantity * obj.stock.current_price

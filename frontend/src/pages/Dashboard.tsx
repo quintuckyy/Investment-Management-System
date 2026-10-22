@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../api/client";
+import Notice from "../components/Notice";
+import { parseApiError } from "../utils/errors";
 import StatCard from "../components/StatCard";
 
 type DashboardCounts = {
@@ -17,6 +19,12 @@ type FinancialTotals = {
   totalGainLoss: number;
   failedTransactions: number;
   pendingOrders: number;
+};
+
+type SummaryRow = {
+  balance?: string;
+  current_value?: string;
+  gain_loss?: string;
 };
 
 function Dashboard() {
@@ -38,6 +46,7 @@ function Dashboard() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -67,17 +76,17 @@ function Dashboard() {
         ]);
 
         const totalBalance = accountSummaryRes.data.reduce(
-          (sum: number, item: any) => sum + Number(item.balance),
+          (sum: number, item: SummaryRow) => sum + Number(item.balance),
           0
         );
 
         const totalPortfolioValue = portfolioSummaryRes.data.reduce(
-          (sum: number, item: any) => sum + Number(item.current_value),
+          (sum: number, item: SummaryRow) => sum + Number(item.current_value),
           0
         );
 
         const totalGainLoss = portfolioSummaryRes.data.reduce(
-          (sum: number, item: any) => sum + Number(item.gain_loss),
+          (sum: number, item: SummaryRow) => sum + Number(item.gain_loss),
           0
         );
 
@@ -99,6 +108,9 @@ function Dashboard() {
         });
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
+        setLoadError(
+          parseApiError(error, "Failed to load dashboard data.").message
+        );
       } finally {
         setLoading(false);
       }
@@ -119,6 +131,15 @@ function Dashboard() {
           Overview of investors, accounts, transactions, orders, portfolio value, and data status.
         </p>
       </div>
+
+      {loadError && (
+        <div className="mt-6">
+          <Notice
+            type="error"
+            message={`${loadError} The figures below may be incomplete.`}
+          />
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <StatCard

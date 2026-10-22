@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import apiClient from "../api/client";
+import { useAuth } from "../auth/AuthContext";
+import { parseApiError } from "../utils/errors";
 import type { Account, Transaction } from "../types/investment";
 
 function Transactions() {
+  const { isStaff } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
 
@@ -17,25 +21,25 @@ function Transactions() {
     status: "COMPLETED",
   });
 
-  async function loadData() {
-    try {
-      const [transactionsRes, accountsRes] = await Promise.all([
-        apiClient.get("/transactions/"),
-        apiClient.get("/accounts/"),
-      ]);
-
-      setTransactions(transactionsRes.data);
-      setAccounts(accountsRes.data);
-    } catch (error) {
-      console.error("Failed to load transactions:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadData() {
+      try {
+        const [transactionsRes, accountsRes] = await Promise.all([
+          apiClient.get("/transactions/"),
+          apiClient.get("/accounts/"),
+        ]);
+
+        setTransactions(transactionsRes.data);
+        setAccounts(accountsRes.data);
+      } catch (error) {
+        console.error("Failed to load transactions:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadData();
-  }, []);
+  }, [reloadKey]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -69,14 +73,11 @@ function Transactions() {
         status: "COMPLETED",
       });
 
-      await loadData();
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        "Failed to create transaction. Please check your connection and try again.";
-
-      setMessage(errorMessage);
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      setMessage(
+        parseApiError(error, "Failed to create transaction. Please try again.").message
+      );
       setMessageType("error");
     }
   }
@@ -94,6 +95,7 @@ function Transactions() {
         </p>
       </div>
 
+      {isStaff ? (
       <form
         onSubmit={handleSubmit}
         className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
@@ -200,6 +202,11 @@ function Transactions() {
           </div>
         </div>
       </form>
+      ) : (
+        <p className="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          You have read-only access. Ask a staff user to create records.
+        </p>
+      )}
 
       <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
