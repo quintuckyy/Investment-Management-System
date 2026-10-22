@@ -1,0 +1,13 @@
+line-length = 120
+target-version = "py312"
+extend-exclude = ["venv", "staticfiles", "*/migrations/*"]
+
+[lint]
+# pyflakes, pycodestyle, import sorting, bugbear
+select = ["E", "F", "W", "I", "B"]
+# Error messages deliberately re-raise as a friendlier ValidationError.
+extend-ignore = ["B904"]
+
+[lint.per-file-ignores]
+# Django settings and the test base class legitimately use long lines.
+"investment_backend/settings.py" = ["E501"]
