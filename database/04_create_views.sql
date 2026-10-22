@@ -30,8 +30,9 @@ SELECT
     a.id AS account_id,
     a.account_number,
     i.full_name AS investor_name,
-    SUM(CASE WHEN t.transaction_type = 'DEPOSIT' THEN t.amount ELSE 0 END) AS total_deposits,
-    SUM(CASE WHEN t.transaction_type = 'WITHDRAWAL' THEN t.amount ELSE 0 END) AS total_withdrawals,
+    -- Only COMPLETED transactions move money, so only they count towards the totals.
+    SUM(CASE WHEN t.transaction_type = 'DEPOSIT' AND t.status = 'COMPLETED' THEN t.amount ELSE 0 END) AS total_deposits,
+    SUM(CASE WHEN t.transaction_type = 'WITHDRAWAL' AND t.status = 'COMPLETED' THEN t.amount ELSE 0 END) AS total_withdrawals,
     COUNT(t.id) AS total_transactions
 FROM accounts a
 JOIN investors i ON a.investor_id = i.id

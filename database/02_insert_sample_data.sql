@@ -6,12 +6,14 @@ VALUES
 ('Ana Garcia', 'ana.garcia@example.com', '09201234567'),
 ('Carlo Mendoza', 'carlo.mendoza@example.com', '09211234567');
 
+-- Balances equal the account's completed deposits - withdrawals - buys + sells below,
+-- so the balance reconciliation check in 06_data_validation.sql returns no rows.
 INSERT INTO accounts (investor_id, account_number, account_type, balance, status)
 VALUES
-(1, 'ACC-1001', 'INDIVIDUAL', 50000.00, 'ACTIVE'),
-(2, 'ACC-1002', 'INDIVIDUAL', 75000.00, 'ACTIVE'),
+(1, 'ACC-1001', 'INDIVIDUAL', 23900.00, 'ACTIVE'),
+(2, 'ACC-1002', 'INDIVIDUAL', 52750.00, 'ACTIVE'),
 (3, 'ACC-1003', 'INDIVIDUAL', 30000.00, 'ACTIVE'),
-(4, 'ACC-1004', 'INDIVIDUAL', 100000.00, 'ACTIVE'),
+(4, 'ACC-1004', 'INDIVIDUAL', 86800.00, 'ACTIVE'),
 (5, 'ACC-1005', 'INDIVIDUAL', 25000.00, 'ACTIVE');
 
 INSERT INTO stocks (symbol, company_name, current_price)

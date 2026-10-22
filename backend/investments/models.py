@@ -24,7 +24,7 @@ class Account(models.Model):
 
     investor = models.ForeignKey(
         Investor,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='accounts'
     )
     account_number = models.CharField(max_length=30, unique=True)
@@ -36,6 +36,12 @@ class Account(models.Model):
     class Meta:
         db_table = 'accounts'
         ordering = ['account_number']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(balance__gte=0),
+                name='ck_account_balance_gte_0',
+            ),
+        ]
 
     def __str__(self):
         return self.account_number
@@ -50,6 +56,12 @@ class Stock(models.Model):
     class Meta:
         db_table = 'stocks'
         ordering = ['symbol']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(current_price__gt=0),
+                name='ck_stock_price_gt_0',
+            ),
+        ]
 
     def __str__(self):
         return self.symbol
@@ -69,7 +81,7 @@ class Transaction(models.Model):
 
     account = models.ForeignKey(
         Account,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='transactions'
     )
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
@@ -81,6 +93,12 @@ class Transaction(models.Model):
     class Meta:
         db_table = 'transactions'
         ordering = ['-transaction_date']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name='ck_transaction_amount_gt_0',
+            ),
+        ]
 
     def __str__(self):
         return self.reference_number
@@ -101,12 +119,12 @@ class Order(models.Model):
 
     account = models.ForeignKey(
         Account,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='orders'
     )
     stock = models.ForeignKey(
         Stock,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='orders'
     )
     order_type = models.CharField(max_length=10, choices=ORDER_TYPE_CHOICES)
@@ -118,6 +136,16 @@ class Order(models.Model):
     class Meta:
         db_table = 'orders'
         ordering = ['-order_date']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name='ck_order_quantity_gt_0',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gt=0),
+                name='ck_order_price_gt_0',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.order_type} {self.stock.symbol}'
@@ -126,12 +154,12 @@ class Order(models.Model):
 class PortfolioHolding(models.Model):
     account = models.ForeignKey(
         Account,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='portfolio_holdings'
     )
     stock = models.ForeignKey(
         Stock,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='portfolio_holdings'
     )
     quantity = models.PositiveIntegerField(default=0)
@@ -142,6 +170,12 @@ class PortfolioHolding(models.Model):
         db_table = 'portfolio_holdings'
         unique_together = ('account', 'stock')
         ordering = ['account', 'stock']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(average_price__gte=0),
+                name='ck_holding_average_price_gte_0',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.account.account_number} - {self.stock.symbol}'

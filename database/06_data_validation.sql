@@ -112,3 +112,30 @@ FROM portfolio_holdings ph
 JOIN accounts a ON ph.account_id = a.id
 JOIN stocks s ON ph.stock_id = s.id
 WHERE ph.quantity = 0;
+
+-- Check that every account balance matches its completed transactions and orders
+-- (deposits - withdrawals - buys + sells). Any row returned is an inconsistency.
+SELECT
+    a.id,
+    a.account_number,
+    a.balance AS recorded_balance,
+    COALESCE(tx.net_amount, 0) + COALESCE(ord.net_amount, 0) AS expected_balance,
+    a.balance - (COALESCE(tx.net_amount, 0) + COALESCE(ord.net_amount, 0)) AS difference
+FROM accounts a
+LEFT JOIN (
+    SELECT
+        account_id,
+        SUM(CASE WHEN transaction_type = 'DEPOSIT' THEN amount ELSE -amount END) AS net_amount
+    FROM transactions
+    WHERE status = 'COMPLETED'
+    GROUP BY account_id
+) tx ON tx.account_id = a.id
+LEFT JOIN (
+    SELECT
+        account_id,
+        SUM(CASE WHEN order_type = 'SELL' THEN quantity * price ELSE -(quantity * price) END) AS net_amount
+    FROM orders
+    WHERE status = 'COMPLETED'
+    GROUP BY account_id
+) ord ON ord.account_id = a.id
+WHERE a.balance <> COALESCE(tx.net_amount, 0) + COALESCE(ord.net_amount, 0);
