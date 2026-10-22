@@ -1,4 +1,4 @@
-# Investment Database System
+# Investment Management System
 
 [![CI](https://github.com/quintuckyy/Investment-Database-System/actions/workflows/ci.yml/badge.svg)](https://github.com/quintuckyy/Investment-Database-System/actions/workflows/ci.yml)
 
